@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MindCheck — Mental Wellness Screening</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;0,600;1,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --sage:    #7ea58a;
+      --moss:    #4a7c59;
+      --cream:   #f5f0e8;
+      --sand:    #e8dece;
+      --stone:   #9b8f82;
+      --ink:     #2b2520;
+      --low:     #5a9e72;
+      --mid:     #d4a027;
+      --high:    #c0553a;
+      --card-bg: #fffdf9;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--cream);
+      color: var(--ink);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── NOISE TEXTURE OVERLAY ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 0;
+    }
+
+    /* ── DECORATIVE BLOBS ── */
+    .blob {
+      position: fixed; border-radius: 50%; filter: blur(80px);
+      opacity: .18; pointer-events: none; z-index: 0;
+    }
+    .blob-1 { width: 500px; height: 500px; background: var(--sage);  top: -150px; right: -100px; }
+    .blob-2 { width: 350px; height: 350px; background: var(--moss);  bottom: -80px; left: -80px; }
+    .blob-3 { width: 250px; height: 250px; background: #d4a027;      top: 50%; left: 35%; }
+
+    /* ── LAYOUT ── */
+    .wrap { position: relative; z-index: 1; max-width: 720px; margin: 0 auto; padding: 60px 24px 100px; }
+
+    /* ── HEADER ── */
+    header { text-align: center; margin-bottom: 56px; }
+    .logo-mark {
+      display: inline-flex; align-items: center; gap: 10px;
+      background: var(--moss); color: #fff;
+      padding: 8px 20px; border-radius: 99px;
+      font-size: 13px; letter-spacing: .12em; text-transform: uppercase;
+      font-weight: 500; margin-bottom: 28px;
+    }
+    .logo-dot { width: 8px; height: 8px; background: #fff; border-radius: 50%; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+    h1 {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(38px, 7vw, 60px);
+      font-weight: 300; line-height: 1.1;
+      color: var(--ink); margin-bottom: 16px;
+    }
+    h1 em { font-style: italic; color: var(--moss); }
+    .tagline { font-size: 16px; color: var(--stone); line-height: 1.6; max-width: 460px; margin: 0 auto 32px; }
+
+    /* ── DISCLAIMER BANNER ── */
+    .disclaimer {
+      background: #fff8ed; border: 1.5px solid #e8c97a;
+      border-radius: 14px; padding: 18px 22px;
+      font-size: 13.5px; color: #7a5e1a; line-height: 1.6;
+      margin-bottom: 48px; display: flex; gap: 12px; align-items: flex-start;
+    }
+    .disclaimer-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+
+    /* ── PROGRESS BAR ── */
+    .progress-wrap { margin-bottom: 40px; }
+    .progress-label { display: flex; justify-content: space-between; font-size: 13px; color: var(--stone); margin-bottom: 8px; }
+    .progress-track { height: 6px; background: var(--sand); border-radius: 99px; overflow: hidden; }
+    .progress-fill {
+      height: 100%; background: linear-gradient(90deg, var(--sage), var(--moss));
+      border-radius: 99px; width: 0%;
+      transition: width .5s cubic-bezier(.4,0,.2,1);
+    }
+
+    /* ── SECTION HEADINGS ── */
+    .section-title {
+      font-family: 'Fraunces', serif; font-size: 22px; font-weight: 400;
+      color: var(--ink); margin-bottom: 6px;
+    }
+    .section-sub { font-size: 13px; color: var(--stone); margin-bottom: 24px; }
+
+    /* ── QUESTION CARD ── */
+    .q-card {
+      background: var(--card-bg);
+      border: 1.5px solid var(--sand);
+      border-radius: 20px; padding: 28px 28px 24px;
+      margin-bottom: 18px;
+      box-shadow: 0 2px 16px rgba(43,37,32,.05);
+      transition: border-color .2s, transform .2s;
+    }
+    .q-card:hover { border-color: var(--sage); transform: translateY(-2px); }
+    .q-num { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--stone); margin-bottom: 8px; }
+    .q-text { font-size: 16px; line-height: 1.5; color: var(--ink); margin-bottom: 18px; font-weight: 400; }
+
+    .options { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    @media(max-width: 480px) { .options { grid-template-columns: 1fr; } }
+
+    .option-label {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--cream); border: 1.5px solid var(--sand);
+      border-radius: 12px; padding: 12px 16px; cursor: pointer;
+      font-size: 14px; color: var(--ink); transition: all .2s;
+      user-select: none;
+    }
+    .option-label:hover { border-color: var(--sage); background: #f0f5f1; }
+    .option-label input[type="radio"] { display: none; }
+    .option-label.selected {
+      border-color: var(--moss); background: #e8f2ea; color: var(--moss); font-weight: 500;
+    }
+    .radio-dot {
+      width: 18px; height: 18px; border-radius: 50%;
+      border: 2px solid var(--sand); flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: all .2s;
+    }
+    .option-label.selected .radio-dot { border-color: var(--moss); background: var(--moss); }
+    .radio-dot::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #fff; opacity: 0; transition: opacity .15s; }
+    .option-label.selected .radio-dot::after { opacity: 1; }
+
+    /* ── OPEN TEXT ── */
+    .open-text {
+      width: 100%; border: 1.5px solid var(--sand);
+      background: var(--cream); border-radius: 12px;
+      padding: 14px 16px; font-family: 'DM Sans', sans-serif;
+      font-size: 15px; color: var(--ink); resize: vertical;
+      min-height: 90px; outline: none; transition: border-color .2s;
+    }
+    .open-text:focus { border-color: var(--moss); }
+
+    /* ── NAV BUTTONS ── */
+    .nav-btns { display: flex; justify-content: space-between; align-items: center; margin-top: 40px; gap: 12px; }
+    .btn {
+      padding: 14px 32px; border-radius: 99px; font-family: 'DM Sans', sans-serif;
+      font-size: 15px; font-weight: 500; cursor: pointer; border: none;
+      transition: all .2s; letter-spacing: .02em;
+    }
+    .btn-ghost { background: transparent; border: 1.5px solid var(--sand); color: var(--stone); }
+    .btn-ghost:hover { border-color: var(--ink); color: var(--ink); }
+    .btn-primary { background: var(--moss); color: #fff; box-shadow: 0 4px 16px rgba(74,124,89,.35); }
+    .btn-primary:hover { background: #3d6a4b; transform: translateY(-1px); box-shadow: 0 6px 22px rgba(74,124,89,.4); }
+    .btn:disabled { opacity: .4; cursor: not-allowed; transform: none !important; }
+
+    /* ── RESULTS ── */
+    #results { display: none; }
+    .result-hero {
+      border-radius: 24px; padding: 48px 36px; text-align: center;
+      margin-bottom: 32px; position: relative; overflow: hidden;
+    }
+    .result-hero.low  { background: linear-gradient(135deg, #e8f5ec, #d0ead7); border: 1.5px solid #a8d4b4; }
+    .result-hero.mid  { background: linear-gradient(135deg, #fef8e7, #faecc8); border: 1.5px solid #e8c97a; }
+    .result-hero.high { background: linear-gradient(135deg, #faeae6, #f5d0c8); border: 1.5px solid #e09080; }
+
+    .result-badge {
+      display: inline-block; padding: 6px 18px; border-radius: 99px;
+      font-size: 12px; letter-spacing: .1em; text-transform: uppercase; font-weight: 600;
+      margin-bottom: 16px;
+    }
+    .low  .result-badge { background: var(--low); color: #fff; }
+    .mid  .result-badge { background: var(--mid); color: #fff; }
+    .high .result-badge { background: var(--high); color: #fff; }
+
+    .result-score {
+      font-family: 'Fraunces', serif; font-size: 72px; font-weight: 300;
+      line-height: 1; margin: 0 0 8px;
+    }
+    .low  .result-score { color: var(--low); }
+    .mid  .result-score { color: var(--mid); }
+    .high .result-score { color: var(--high); }
+
+    .result-max { font-size: 14px; color: var(--stone); margin-bottom: 20px; }
+    .result-title { font-family: 'Fraunces', serif; font-size: 28px; font-weight: 400; margin-bottom: 12px; }
+    .result-desc { font-size: 15px; color: var(--stone); line-height: 1.7; max-width: 440px; margin: 0 auto; }
+
+    /* ── SCORE BREAKDOWN ── */
+    .breakdown {
+      background: var(--card-bg); border: 1.5px solid var(--sand);
+      border-radius: 20px; padding: 28px; margin-bottom: 24px;
+    }
+    .breakdown h3 { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 400; margin-bottom: 20px; }
+    .breakdown-row { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+    .breakdown-label { font-size: 14px; color: var(--stone); width: 130px; flex-shrink: 0; }
+    .breakdown-bar-wrap { flex: 1; height: 8px; background: var(--sand); border-radius: 99px; overflow: hidden; }
+    .breakdown-bar { height: 100%; border-radius: 99px; background: var(--sage); transition: width 1s cubic-bezier(.4,0,.2,1); }
+    .breakdown-val { font-size: 14px; font-weight: 500; color: var(--ink); width: 32px; text-align: right; }
+
+    /* ── SUGGESTIONS ── */
+    .suggestions { margin-bottom: 24px; }
+    .suggestions h3 { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 400; margin-bottom: 16px; }
+    .suggest-card {
+      display: flex; gap: 16px; align-items: flex-start;
+      background: var(--card-bg); border: 1.5px solid var(--sand);
+      border-radius: 16px; padding: 20px; margin-bottom: 12px;
+      transition: border-color .2s, transform .2s;
+    }
+    .suggest-card:hover { border-color: var(--sage); transform: translateX(4px); }
+    .suggest-icon { font-size: 24px; flex-shrink: 0; }
+    .suggest-content h4 { font-size: 15px; font-weight: 500; margin-bottom: 4px; }
+    .suggest-content p  { font-size: 14px; color: var(--stone); line-height: 1.6; }
+
+    /* ── SAVE STATUS ── */
+    .save-status {
+      text-align: center; font-size: 14px; color: var(--stone);
+      padding: 16px; background: var(--card-bg);
+      border: 1.5px solid var(--sand); border-radius: 14px; margin-bottom: 24px;
+    }
+    .save-status span { color: var(--moss); font-weight: 500; }
+
+    /* ── RETAKE BTN ── */
+    .retake-btn {
+      display: block; width: 100%; text-align: center;
+      background: var(--ink); color: #fff;
+      padding: 16px; border-radius: 99px; font-size: 15px;
+      font-weight: 500; cursor: pointer; border: none;
+      font-family: 'DM Sans', sans-serif;
+      transition: background .2s, transform .2s;
+    }
+    .retake-btn:hover { background: #3d3028; transform: translateY(-2px); }
+
+    /* ── HISTORY ── */
+    .history-section { margin-top: 48px; }
+    .history-section h3 { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 400; margin-bottom: 16px; }
+    .history-list { list-style: none; }
+    .history-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 14px 18px; background: var(--card-bg);
+      border: 1.5px solid var(--sand); border-radius: 14px; margin-bottom: 10px;
+      font-size: 14px;
+    }
+    .history-dot {
+      width: 10px; height: 10px; border-radius: 50%; margin-right: 10px; flex-shrink: 0;
+    }
+    .history-left { display: flex; align-items: center; }
+    .history-right { color: var(--stone); font-size: 13px; }
+
+    /* ── CRISIS BANNER ── */
+    .crisis-banner {
+      display: none;
+      background: #faeae6; border: 2px solid var(--high);
+      border-radius: 16px; padding: 20px 24px;
+      margin-bottom: 20px; text-align: center;
+    }
+    .crisis-banner.visible { display: block; }
+    .crisis-banner strong { display: block; font-size: 16px; color: var(--high); margin-bottom: 6px; }
+    .crisis-banner p { font-size: 14px; color: #7a2a1a; line-height: 1.6; }
+    .crisis-banner a { color: var(--high); font-weight: 600; text-decoration: none; }
+    .crisis-banner a:hover { text-decoration: underline; }
+
+    /* ── VALIDATION ERROR ── */
+    .validation-msg {
+      display: none; background: #faeae6; border: 1.5px solid var(--high);
+      border-radius: 10px; padding: 10px 16px;
+      font-size: 13.5px; color: var(--high);
+      margin-top: 12px; text-align: center;
+    }
+    .validation-msg.visible { display: block; }
+
+    /* ── KEYBOARD ACCESSIBILITY for option labels ── */
+    .option-label:focus-within { outline: 2px solid var(--moss); outline-offset: 2px; }
+    .option-label input[type="radio"]:focus-visible + .radio-dot { outline: 2px solid var(--moss); outline-offset: 2px; }
+
+    /* ── RESULT DISCLAIMER (repeated on results page) ── */
+    .result-disclaimer {
+      background: #fff8ed; border: 1px solid #e8c97a;
+      border-radius: 12px; padding: 14px 18px;
+      font-size: 12.5px; color: #7a5e1a; line-height: 1.5;
+      margin-bottom: 20px; text-align: center;
+    }
+    .fade-in { animation: fadeIn .5s ease forwards; }
+    @keyframes fadeIn { from { opacity:0; transform: translateY(14px); } to { opacity:1; transform: translateY(0); } }
+
+    /* ── LOADING SPINNER ── */
+    .spinner {
+      display: inline-block; width: 20px; height: 20px;
+      border: 2px solid rgba(255,255,255,.3); border-top-color: #fff;
+      border-radius: 50%; animation: spin .6s linear infinite; vertical-align: middle; margin-right: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── CHARTS ── */
+    .charts-section { margin-bottom: 24px; }
+    .charts-section h3 { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 400; margin-bottom: 16px; }
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    @media(max-width: 560px) { .charts-grid { grid-template-columns: 1fr; } }
+    .chart-card {
+      background: var(--card-bg);
+      border: 1.5px solid var(--sand);
+      border-radius: 20px;
+      padding: 24px 20px 16px;
+      box-shadow: 0 2px 16px rgba(43,37,32,.05);
+    }
+    .chart-card h4 {
+      font-family: 'Fraunces', serif;
+      font-size: 14px; font-weight: 400;
+      color: var(--stone); text-align: center;
+      margin-bottom: 12px; letter-spacing: .04em;
+      text-transform: uppercase; font-size: 12px;
+    }
+    .chart-card-wide {
+      background: var(--card-bg);
+      border: 1.5px solid var(--sand);
+      border-radius: 20px;
+      padding: 24px 20px 16px;
+      box-shadow: 0 2px 16px rgba(43,37,32,.05);
+    }
+    .chart-card-wide h4 {
+      font-family: 'Fraunces', serif;
+      font-size: 12px; font-weight: 400;
+      color: var(--stone); text-align: center;
+      margin-bottom: 12px; letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    .chart-canvas-wrap { position: relative; width: 100%; }
+    .gauge-label {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -38%);
+      text-align: center; pointer-events: none;
+    }
+    .gauge-label .gauge-num {
+      font-family: 'Fraunces', serif;
+      font-size: 32px; font-weight: 300; line-height: 1;
+      color: var(--ink);
+    }
+    .gauge-label .gauge-sub {
+      font-size: 11px; color: var(--stone); letter-spacing: .06em; text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <div class="blob blob-3"></div>
+
+  <div class="wrap">
+    <!-- HEADER -->
+    <header>
+      <div class="logo-mark"><div class="logo-dot"></div> MindCheck</div>
+      <h1>How are you <em>really</em><br>feeling?</h1>
+      <p class="tagline">A gentle wellness screening to help you understand your mental health — and find the right support.</p>
+    </header>
+
+    <!-- DISCLAIMER -->
+    <div class="disclaimer">
+      <span class="disclaimer-icon">⚠️</span>
+      <div>
+        <strong>This is not a medical diagnosis.</strong> MindCheck is a wellness awareness tool only.
+        Results are for personal reflection and do not replace professional evaluation.
+        If you're in crisis, please contact a mental health professional or helpline immediately.
+      </div>
+    </div>
+
+    <!-- QUESTIONNAIRE -->
+    <div id="questionnaire">
+      <div class="progress-wrap">
+        <div class="progress-label">
+          <span id="prog-label">Section 1 of 4</span>
+          <span id="prog-pct">0%</span>
+        </div>
+        <div class="progress-track"><div class="progress-fill" id="prog-fill"></div></div>
+      </div>
+
+      <div id="sections-container"></div>
+
+      <div class="nav-btns">
+        <button class="btn btn-ghost" id="btn-back" onclick="prevSection()" disabled>← Back</button>
+        <button class="btn btn-primary" id="btn-next" onclick="nextSection()">Continue →</button>
+      </div>
+      <div class="validation-msg" id="validation-msg" role="alert">
+        Please answer all questions before continuing.
+      </div>
+    </div>
+
+    <!-- RESULTS -->
+    <div id="results" class="fade-in">
+      <div class="result-hero" id="result-hero">
+        <div class="result-badge" id="result-badge">—</div>
+        <div class="result-score" id="result-score">0</div>
+        <div class="result-max">out of 45 points</div>
+        <div class="result-title" id="result-title">—</div>
+        <p class="result-desc" id="result-desc">—</p>
+      </div>
+
+      <!-- Crisis banner — only shown for high risk -->
+      <div class="crisis-banner" id="crisis-banner" role="alert">
+        <strong>🆘 You may need immediate support</strong>
+        <p>
+          If you are in distress, please reach out now.<br>
+          <a href="tel:9152987821">iCall (India): 9152987821</a> &nbsp;|&nbsp;
+          <a href="tel:18002662345">Vandrevala Foundation: 1800-2662-345</a> (24/7, free)
+        </p>
+      </div>
+
+      <!-- Disclaimer repeated on results page -->
+      <div class="result-disclaimer">
+        Not a medical diagnosis. These results are for personal reflection only and do not replace professional evaluation.
+      </div>
+
+      <div class="breakdown">
+        <h3>Score Breakdown by Area</h3>
+        <div id="breakdown-bars"></div>
+      </div>
+
+      <!-- CHARTS -->
+      <div class="charts-section">
+        <h3>Wellness Visualisation</h3>
+        <div class="charts-grid">
+          <!-- Radar -->
+          <div class="chart-card">
+            <h4>Dimension Radar</h4>
+            <div class="chart-canvas-wrap">
+              <canvas id="chart-radar" height="220"></canvas>
+            </div>
+          </div>
+          <!-- Gauge -->
+          <div class="chart-card">
+            <h4>Overall Score</h4>
+            <div class="chart-canvas-wrap" style="position:relative">
+              <canvas id="chart-gauge" height="220"></canvas>
+              <div class="gauge-label">
+                <div class="gauge-num" id="gauge-num">0</div>
+                <div class="gauge-sub">out of 45</div>
+              </div>
+              <!-- gauge-sub is always 45 since MAX_SCORE = 45 is correct -->
+            </div>
+          </div>
+        </div>
+        <!-- History trend -->
+        <div class="chart-card-wide" id="chart-history-wrap" style="display:none">
+          <h4>Score Trend Over Time</h4>
+          <canvas id="chart-history" height="120"></canvas>
+        </div>
+      </div>
+
+      <div class="suggestions">
+        <h3>Personalised Suggestions</h3>
+        <div id="suggestions-list"></div>
+      </div>
+
+      <div class="save-status" id="save-status">
+        💾 Your results have been <span>saved</span> for tracking.
+      </div>
+
+      <button class="retake-btn" onclick="retake()">Take the Screening Again</button>
+
+      <div class="history-section" id="history-section" style="display:none">
+        <h3>Your History</h3>
+        <ul class="history-list" id="history-list"></ul>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  /* ═══════════════════════════════════════
+     DATA: Questions organised in 4 sections
+  ═══════════════════════════════════════ */
+  const SECTIONS = [
+    {
+      title: "Mood & Emotions",
+      sub: "How have you been feeling emotionally over the past 2 weeks?",
+      questions: [
+        { id: "q1",  text: "I feel down, depressed, or hopeless.",                 type: "scale" },
+        { id: "q2",  text: "I feel little interest or pleasure in daily activities.", type: "scale" },
+        { id: "q3",  text: "I feel good about myself and my life.",                  type: "scale", reverse: true },
+        { id: "q4",  text: "I experience sudden waves of sadness or emptiness.",     type: "scale" },
+      ]
+    },
+    {
+      title: "Anxiety & Stress",
+      sub: "How have worry, nervousness, or tension affected you recently?",
+      questions: [
+        { id: "q5",  text: "I feel nervous, anxious, or on edge.",           type: "scale" },
+        { id: "q6",  text: "I find it hard to stop or control worrying.",    type: "scale" },
+        { id: "q7",  text: "I can relax and let go of stressful thoughts.",  type: "scale", reverse: true },
+        { id: "q8",  text: "I feel an overwhelming sense of dread.",         type: "scale" },
+      ]
+    },
+    {
+      title: "Sleep & Energy",
+      sub: "Think about your sleep patterns and physical energy levels.",
+      questions: [
+        { id: "q9",  text: "I sleep well and wake up feeling rested.",               type: "scale", reverse: true },
+        { id: "q10", text: "I feel tired or have little energy most of the time.",   type: "scale" },
+        { id: "q11", text: "I have trouble falling or staying asleep.",              type: "scale" },
+        { id: "q12", text: "My body feels tense, heavy, or physically exhausted.",  type: "scale" },
+      ]
+    },
+    {
+      title: "Social & Lifestyle",
+      sub: "How have social connections and daily habits been going?",
+      questions: [
+        { id: "q13", text: "I feel connected to the people around me.",                    type: "scale", reverse: true },
+        { id: "q14", text: "I have been withdrawing from friends or social activities.",   type: "scale" },
+        { id: "q15", text: "I have been able to focus on tasks and responsibilities.",     type: "scale", reverse: true },
+        { id: "q16", text: "Describe in a few words how you've been feeling lately.",      type: "open"  },
+      ]
+    }
+  ];
+
+  const SCALE_OPTIONS = [
+    { label: "Never",    value: 0 },
+    { label: "Sometimes",value: 1 },
+    { label: "Often",    value: 2 },
+    { label: "Always",   value: 3 },
+  ];
+
+  /* ═══════════════════════════════════════
+     STATE
+  ═══════════════════════════════════════ */
+  let currentSection = 0;
+  let answers = {};      // { qId: numericValue }
+  let openAnswers = {};  // { qId: string }
+
+  // Persistent userId — stored in localStorage so history is linked across sessions
+  function getOrCreateUserId() {
+    let uid = localStorage.getItem('mindcheck_userId');
+    if (!uid) {
+      uid = 'user_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
+      localStorage.setItem('mindcheck_userId', uid);
+    }
+    return uid;
+  }
+  const USER_ID = getOrCreateUserId();
+
+  /* ═══════════════════════════════════════
+     BUILD UI
+  ═══════════════════════════════════════ */
+  function buildSections() {
+    const container = document.getElementById('sections-container');
+    SECTIONS.forEach((sec, si) => {
+      const div = document.createElement('div');
+      div.className = 'section-block';
+      div.id = `section-${si}`;
+      div.style.display = si === 0 ? 'block' : 'none';
+
+      let html = `<div class="section-title">${sec.title}</div>
+                  <div class="section-sub">${sec.sub}</div>`;
+
+      sec.questions.forEach((q, qi) => {
+        if (q.type === 'scale') {
+          html += `<div class="q-card fade-in" style="animation-delay:${qi * 0.07}s">
+            <div class="q-num">Question ${(SECTIONS.slice(0,si).flatMap(s=>s.questions).length) + qi + 1} / 19</div>
+            <div class="q-text">${q.text}</div>
+            <div class="options" id="opts-${q.id}">`;
+          SCALE_OPTIONS.forEach(opt => {
+            html += `<label class="option-label" id="lbl-${q.id}-${opt.value}"
+              tabindex="0"
+              role="radio"
+              aria-checked="false"
+              onkeydown="if(event.key===' '||event.key==='Enter'){event.preventDefault();selectOption('${q.id}',${opt.value},this);}">
+              <input type="radio" name="${q.id}" value="${opt.value}" onchange="selectOption('${q.id}', ${opt.value}, this)" tabindex="-1"/>
+              <span class="radio-dot"></span>${opt.label}
+            </label>`;
+          });
+          html += `</div></div>`;
+        } else {
+          html += `<div class="q-card fade-in" style="animation-delay:${qi * 0.07}s">
+            <div class="q-num">Question ${(SECTIONS.slice(0,si).flatMap(s=>s.questions).length) + qi + 1} / 19</div>
+            <div class="q-text">${q.text}</div>
+            <textarea class="open-text" id="open-${q.id}" placeholder="Take your time…" oninput="openAnswers['${q.id}']=this.value"></textarea>
+          </div>`;
+        }
+      });
+
+      div.innerHTML = html;
+      container.appendChild(div);
+    });
+  }
+
+  function selectOption(qId, value, el) {
+    answers[qId] = value;
+    // Clear all labels for this question
+    SCALE_OPTIONS.forEach(opt => {
+      const lbl = document.getElementById(`lbl-${qId}-${opt.value}`);
+      if (lbl) {
+        lbl.classList.remove('selected');
+        lbl.setAttribute('aria-checked', 'false');
+      }
+    });
+    const chosen = document.getElementById(`lbl-${qId}-${value}`);
+    if (chosen) {
+      chosen.classList.add('selected');
+      chosen.setAttribute('aria-checked', 'true');
+    }
+    // Hide validation message once user starts answering
+    const msg = document.getElementById('validation-msg');
+    if (msg) msg.classList.remove('visible');
+  }
+
+  /* ═══════════════════════════════════════
+     NAVIGATION
+  ═══════════════════════════════════════ */
+  function updateProgress() {
+    const total = SECTIONS.length;
+    const pct = Math.round((currentSection / total) * 100);
+    document.getElementById('prog-fill').style.width = pct + '%';
+    document.getElementById('prog-pct').textContent = pct + '%';
+    document.getElementById('prog-label').textContent = `Section ${currentSection + 1} of ${total}`;
+  }
+
+  function showSection(idx) {
+    SECTIONS.forEach((_, i) => {
+      document.getElementById(`section-${i}`).style.display = i === idx ? 'block' : 'none';
+    });
+    currentSection = idx;
+    updateProgress();
+    document.getElementById('btn-back').disabled = idx === 0;
+
+    const isLast = idx === SECTIONS.length - 1;
+    const nextBtn = document.getElementById('btn-next');
+    nextBtn.textContent = isLast ? 'Submit ✓' : 'Continue →';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function prevSection() {
+    if (currentSection > 0) showSection(currentSection - 1);
+  }
+
+  function nextSection() {
+    // Validate: all scale questions answered
+    const sec = SECTIONS[currentSection];
+    const unanswered = sec.questions.filter(q => q.type === 'scale' && answers[q.id] === undefined);
+    if (unanswered.length) {
+      unanswered.forEach(q => {
+        const card = document.getElementById(`opts-${q.id}`)?.closest('.q-card');
+        if (card) {
+          card.style.border = '1.5px solid var(--high)';
+          card.setAttribute('aria-invalid', 'true');
+          setTimeout(() => {
+            card.style.border = '';
+            card.removeAttribute('aria-invalid');
+          }, 2500);
+        }
+      });
+      // Show visible error message
+      const msg = document.getElementById('validation-msg');
+      if (msg) msg.classList.add('visible');
+      // Scroll to first unanswered
+      const firstCard = document.getElementById(`opts-${unanswered[0].id}`)?.closest('.q-card');
+      if (firstCard) firstCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    // Clear validation message when proceeding
+    const msg = document.getElementById('validation-msg');
+    if (msg) msg.classList.remove('visible');
+
+    if (currentSection < SECTIONS.length - 1) {
+      showSection(currentSection + 1);
+    } else {
+      submitAssessment();
+    }
+  }
+
+  /* ═══════════════════════════════════════
+     SCORING
+  ═══════════════════════════════════════ */
+  function calcScore() {
+    let total = 0;
+    let sectionScores = {};
+
+    SECTIONS.forEach((sec, si) => {
+      let sScore = 0;
+      let sMax = 0;
+      sec.questions.forEach(q => {
+        if (q.type !== 'scale') return;
+        let val = answers[q.id] ?? 0;
+        if (q.reverse) val = 3 - val;
+        sScore += val;
+        sMax += 3;
+      });
+      sectionScores[sec.title] = { score: sScore, max: sMax };
+      total += sScore;
+    });
+
+    return { total, max: 45, sectionScores };
+  }
+
+  function getLevel(score) {
+    if (score <= 14) return 'low';
+    if (score <= 29) return 'mid';
+    return 'high';
+  }
+
+  const LEVEL_INFO = {
+    low: {
+      badge: "Low Risk",
+      title: "You seem to be doing well",
+      desc: "Your responses suggest your mental wellness is generally in a good place. Keep nurturing the habits that support you.",
+      suggestions: [
+        { icon: "🌿", title: "Maintain Healthy Routines", text: "Regular sleep, physical movement, and meaningful social connection are your biggest protective factors." },
+        { icon: "📓", title: "Journalling Practice", text: "Even brief daily reflection helps build emotional self-awareness over time." },
+        { icon: "🎯", title: "Mindfulness Check-ins", text: "Try a 5-minute breathing exercise each morning — it keeps stress from quietly accumulating." },
+      ]
+    },
+    mid: {
+      badge: "Moderate Concern",
+      title: "Some areas need attention",
+      desc: "You may be experiencing meaningful stress, low mood, or anxiety. These feelings are valid — and actionable.",
+      suggestions: [
+        { icon: "💬", title: "Talk to Someone You Trust", text: "Sharing how you feel with a friend, family member, or counsellor can provide real relief." },
+        { icon: "🧘", title: "Stress-Reduction Techniques", text: "Progressive muscle relaxation, box breathing, or guided meditation can help regulate your nervous system." },
+        { icon: "📅", title: "Reduce Overload", text: "Review your commitments and consider what can be postponed. Rest is not a luxury — it's a necessity." },
+        { icon: "🏃", title: "Physical Activity", text: "Even 20 minutes of walking daily can meaningfully reduce anxiety and depressive symptoms." },
+      ]
+    },
+    high: {
+      badge: "High Concern",
+      title: "Please seek support",
+      desc: "Your responses suggest you may be experiencing significant distress. You deserve professional care — please reach out to a mental health professional.",
+      suggestions: [
+        { icon: "🏥", title: "Speak to a Professional", text: "A psychologist, psychiatrist, or therapist can provide evidence-based support tailored to your needs. Seeking help is a sign of strength." },
+        { icon: "📞", title: "Crisis Helplines", text: "If you are in immediate distress, please call iCall (India): 9152987821 or Vandrevala Foundation: 1860-2662-345 (available 24/7)." },
+        { icon: "👥", title: "Don't Isolate", text: "Connection is medicine. Reach out to a person you trust — even a brief message matters." },
+        { icon: "🛑", title: "Reduce Stressors Where Possible", text: "Temporarily step back from non-essential obligations while you focus on your wellbeing." },
+      ]
+    }
+  };
+
+  /* ═══════════════════════════════════════
+     SUBMIT & RENDER RESULTS
+  ═══════════════════════════════════════ */
+  // ── Chart instances (kept so we can destroy before re-creating on retake) ──
+  let chartRadar = null, chartGauge = null, chartHistory = null;
+
+  function renderCharts(total, sectionScores) {
+    const COLORS = {
+      low:  { border: '#5a9e72', bg: 'rgba(90,158,114,0.15)' },
+      mid:  { border: '#d4a027', bg: 'rgba(212,160,39,0.15)'  },
+      high: { border: '#c0553a', bg: 'rgba(192,85,58,0.15)'  },
+    };
+    const level = getLevel(total);
+    const col   = COLORS[level];
+
+    const labels  = Object.keys(sectionScores);
+    const pcts    = labels.map(l => Math.round((sectionScores[l].score / sectionScores[l].max) * 100));
+
+    // ── Radar ──────────────────────────────────────────────────────────────
+    if (chartRadar) chartRadar.destroy();
+    chartRadar = new Chart(document.getElementById('chart-radar'), {
+      type: 'radar',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Your scores (%)',
+          data: pcts,
+          backgroundColor: col.bg,
+          borderColor: col.border,
+          borderWidth: 2,
+          pointBackgroundColor: col.border,
+          pointRadius: 4,
+        }]
+      },
+      options: {
+        responsive: true,
+        animation: { duration: 900, easing: 'easeOutQuart' },
+        scales: {
+          r: {
+            min: 0, max: 100,
+            ticks: { stepSize: 25, color: '#9b8f82', font: { size: 10 }, backdropColor: 'transparent' },
+            grid:        { color: 'rgba(155,143,130,0.2)' },
+            angleLines:  { color: 'rgba(155,143,130,0.2)' },
+            pointLabels: { color: '#2b2520', font: { size: 11, family: 'DM Sans' } },
+          }
+        },
+        plugins: { legend: { display: false } }
+      }
+    });
+
+    // ── Doughnut gauge ─────────────────────────────────────────────────────
+    const MAX_SCORE = 45;
+    const scored = Math.min(total, MAX_SCORE);
+    document.getElementById('gauge-num').textContent = scored;
+    if (chartGauge) chartGauge.destroy();
+    chartGauge = new Chart(document.getElementById('chart-gauge'), {
+      type: 'doughnut',
+      data: {
+        datasets: [{
+          data: [scored, MAX_SCORE - scored],
+          backgroundColor: [col.border, '#e8dece'],
+          borderWidth: 0,
+          circumference: 270,
+          rotation: 225,
+        }]
+      },
+      options: {
+        responsive: true,
+        cutout: '72%',
+        animation: { duration: 900, easing: 'easeOutQuart' },
+        plugins: { legend: { display: false }, tooltip: { enabled: false } }
+      }
+    });
+
+    // ── History trend ──────────────────────────────────────────────────────
+    const history = JSON.parse(localStorage.getItem('mindcheck_history') || '[]');
+    if (history.length >= 2) {
+      document.getElementById('chart-history-wrap').style.display = 'block';
+      const hLabels = history.slice(0, 8).reverse().map(h => {
+        const d = new Date(h.timestamp || h.completedAt);
+        return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+      });
+      const hScores = history.slice(0, 8).reverse().map(h => h.total ?? h.totalScore ?? 0);
+      const hColors = history.slice(0, 8).reverse().map(h =>
+        h.level === 'low' ? '#5a9e72' : h.level === 'mid' ? '#d4a027' : '#c0553a'
+      );
+      if (chartHistory) chartHistory.destroy();
+      chartHistory = new Chart(document.getElementById('chart-history'), {
+        type: 'line',
+        data: {
+          labels: hLabels,
+          datasets: [{
+            label: 'Score',
+            data: hScores,
+            borderColor: '#4a7c59',
+            backgroundColor: 'rgba(74,124,89,0.08)',
+            borderWidth: 2.5,
+            pointBackgroundColor: hColors,
+            pointRadius: 5,
+            pointHoverRadius: 7,
+            fill: true,
+            tension: 0.35,
+          }]
+        },
+        options: {
+          responsive: true,
+          animation: { duration: 900, easing: 'easeOutQuart' },
+          scales: {
+            y: {
+              min: 0, max: 45,
+              grid: { color: 'rgba(155,143,130,0.15)' },
+              ticks: { color: '#9b8f82', font: { size: 11 }, stepSize: 15 }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { color: '#9b8f82', font: { size: 11 } }
+            }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: ctx => ` Score: ${ctx.parsed.y} / 45`
+              }
+            }
+          }
+        }
+      });
+    }
+  }
+
+  async function submitAssessment() {
+    const nextBtn = document.getElementById('btn-next');
+    nextBtn.innerHTML = '<span class="spinner"></span> Processing…';
+    nextBtn.disabled = true;
+
+    const { total, max, sectionScores } = calcScore();
+
+    // ── Call backend API ──────────────────────────────────────────────────
+    let level, suggestions, saveMsg;
+    try {
+      const resp = await fetch('/api/assessment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: USER_ID,
+          answers,
+          openNotes: openAnswers,
+          sectionScores,
+        }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Server error');
+      level       = data.level;
+      suggestions = data.suggestions; // plain strings from server
+      saveMsg     = data.mlUsed
+        ? '✅ Results saved & scored by ML model.'
+        : '✅ Results saved (rule-based scoring).';
+    } catch (err) {
+      console.warn('Backend unavailable, using client-side scoring:', err.message);
+      level       = getLevel(total);
+      suggestions = null; // will use LEVEL_INFO below
+      saveMsg     = '💾 Results saved locally (offline mode).';
+    }
+
+    const info = LEVEL_INFO[level];
+
+    // ── Hero card ──────────────────────────────────────────────────────────
+    const hero = document.getElementById('result-hero');
+    hero.className = `result-hero ${level}`;
+    document.getElementById('result-badge').textContent  = info.badge;
+    document.getElementById('result-score').textContent  = total;
+    document.getElementById('result-title').textContent  = info.title;
+    document.getElementById('result-desc').textContent   = info.desc;
+
+    // ── Crisis banner ──────────────────────────────────────────────────────
+    const banner = document.getElementById('crisis-banner');
+    if (level === 'high') banner.classList.add('visible');
+    else banner.classList.remove('visible');
+
+    // ── Breakdown bars ─────────────────────────────────────────────────────
+    const barsEl = document.getElementById('breakdown-bars');
+    barsEl.innerHTML = '';
+    Object.entries(sectionScores).forEach(([name, { score, max: m }]) => {
+      const pct = Math.round((score / m) * 100);
+      barsEl.innerHTML += `<div class="breakdown-row">
+        <div class="breakdown-label">${name}</div>
+        <div class="breakdown-bar-wrap"><div class="breakdown-bar" style="width:${pct}%"></div></div>
+        <div class="breakdown-val">${score}/${m}</div>
+      </div>`;
+    });
+
+    // ── Suggestions ─────────────────────────────────────────────────────────
+    const sugEl = document.getElementById('suggestions-list');
+    sugEl.innerHTML = info.suggestions.map(s => `
+      <div class="suggest-card">
+        <div class="suggest-icon">${s.icon}</div>
+        <div class="suggest-content"><h4>${s.title}</h4><p>${s.text}</p></div>
+      </div>`).join('');
+
+    // ── Save status ──────────────────────────────────────────────────────────
+    const statusEl = document.getElementById('save-status');
+    if (statusEl) {
+      statusEl.innerHTML = saveMsg;
+    }
+
+    // ── Save to localStorage (for offline history + trend chart) ─────────────
+    saveResult({ total, max, level, sectionScores, openNotes: openAnswers, timestamp: new Date().toISOString() });
+
+    // ── Show results ──────────────────────────────────────────────────────────
+    document.getElementById('questionnaire').style.display = 'none';
+    const resultsEl = document.getElementById('results');
+    resultsEl.style.display = 'block';
+    resultsEl.classList.add('fade-in');
+
+    // Render charts (after DOM is visible)
+    setTimeout(() => renderCharts(total, sectionScores), 50);
+
+    // Fetch server-side history to keep trend chart accurate across devices
+    fetchAndRenderHistory();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+    /* ═══════════════════════════════════════
+     LOCAL STORAGE
+  ═══════════════════════════════════════ */
+  function saveResult(data) {
+    let history = JSON.parse(localStorage.getItem('mindcheck_history') || '[]');
+    history.unshift(data);
+    if (history.length > 10) history = history.slice(0, 10);
+    localStorage.setItem('mindcheck_history', JSON.stringify(history));
+  }
+
+  function renderHistoryItems(history) {
+    if (history.length < 2) return;
+    const sec  = document.getElementById('history-section');
+    const list = document.getElementById('history-list');
+    sec.style.display = 'block';
+    const colors = { low: '#5a9e72', mid: '#d4a027', high: '#c0553a' };
+    list.innerHTML = history.slice(0, 6).map(h => {
+      const d = new Date(h.timestamp || h.completedAt);
+      const dateStr = d.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
+      const total = h.total ?? h.totalScore;
+      const max   = h.max   ?? h.maxScore ?? 45;
+      return `<li class="history-item">
+        <div class="history-left">
+          <div class="history-dot" style="background:${colors[h.level]}"></div>
+          <strong>${LEVEL_INFO[h.level].badge}</strong> — Score: ${total}/${max}
+        </div>
+        <div class="history-right">${dateStr}</div>
+      </li>`;
+    }).join('');
+  }
+
+  async function fetchAndRenderHistory() {
+    // Try to get history from server (cross-device, persistent)
+    try {
+      const resp = await fetch(`/api/history/${USER_ID}`);
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data.history && data.history.length >= 2) {
+          renderHistoryItems(data.history.map(h => ({
+            total: h.totalScore,
+            max:   h.maxScore ?? 45,
+            level: h.level,
+            timestamp: h.completedAt,
+            sectionScores: h.sectionScores || {},
+          })));
+          return;
+        }
+      }
+    } catch (e) { /* fall through to localStorage */ }
+
+    // Fallback: localStorage history
+    const history = JSON.parse(localStorage.getItem('mindcheck_history') || '[]');
+    renderHistoryItems(history);
+  }
+
+  // Keep old name as alias so retake() still works
+  function renderHistory() { fetchAndRenderHistory(); }
+
+  /* ═══════════════════════════════════════
+     RETAKE
+  ═══════════════════════════════════════ */
+  function retake() {
+    answers = {}; openAnswers = {};
+    // Destroy charts so canvas is fresh next time
+    if (chartRadar)   { chartRadar.destroy();   chartRadar   = null; }
+    if (chartGauge)   { chartGauge.destroy();   chartGauge   = null; }
+    if (chartHistory) { chartHistory.destroy(); chartHistory = null; }
+    document.getElementById('chart-history-wrap').style.display = 'none';
+    document.getElementById('crisis-banner').classList.remove('visible');
+    document.getElementById('results').style.display = 'none';
+    document.getElementById('questionnaire').style.display = 'block';
+    document.getElementById('sections-container').innerHTML = '';
+    const msg = document.getElementById('validation-msg');
+    if (msg) msg.classList.remove('visible');
+    buildSections();
+    showSection(0);
+    document.getElementById('btn-next').textContent = 'Continue →';
+    document.getElementById('btn-next').disabled = false;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  /* ═══════════════════════════════════════
+     INIT
+  ═══════════════════════════════════════ */
+  buildSections();
+  updateProgress();
+  </script>
+</body>
+</html>

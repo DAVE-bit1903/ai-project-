@@ -1,0 +1,22 @@
+{
+  "name": "mindcheck",
+  "version": "1.0.0",
+  "description": "Mental Wellness Screening + Support App",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "seed": "node db.js seed",
+    "drop-db": "node db.js drop",
+    "list-db": "node db.js list"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "express-rate-limit": "^8.4.1",
+    "mongoose": "^8.0.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.3"
+  }
+}
