@@ -1,0 +1,1 @@
+web: python -m gunicorn model_api:app
